@@ -4,13 +4,12 @@ namespace Mpociot\CaptainHook;
 
 use GuzzleHttp\Client;
 use GuzzleHttp\ClientInterface;
-use Illuminate\Support\Facades\Event;
+use Illuminate\Foundation\Bus\DispatchesJobs;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
 use Mpociot\CaptainHook\Commands\AddWebhook;
-use Illuminate\Foundation\Bus\DispatchesJobs;
-use Mpociot\CaptainHook\Commands\ListWebhooks;
 use Mpociot\CaptainHook\Commands\DeleteWebhook;
+use Mpociot\CaptainHook\Commands\ListWebhooks;
 use Mpociot\CaptainHook\Jobs\TriggerWebhooksJob;
 
 /**
@@ -157,13 +156,13 @@ class CaptainHookServiceProvider extends ServiceProvider
     public function getWebhooks()
     {
         // Check if migration ran
-        if (Schema::hasTable((new Webhook)->getTable())) {
-            return collect($this->getCache()->rememberForever(Webhook::CACHE_KEY, function () {
+        return collect($this->getCache()->rememberForever(Webhook::CACHE_KEY, function () {
+            if (Schema::hasTable((new Webhook)->getTable())) {
                 return Webhook::all();
-            }));
-        }
-
-        return collect();
+            } else {
+                return collect();
+            }
+        }));
     }
 
     /**

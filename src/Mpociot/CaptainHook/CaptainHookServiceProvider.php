@@ -7,7 +7,6 @@ use GuzzleHttp\ClientInterface;
 use Illuminate\Foundation\Bus\DispatchesJobs;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
-use Illuminate\Support\Str;
 use Mpociot\CaptainHook\Commands\AddWebhook;
 use Mpociot\CaptainHook\Commands\DeleteWebhook;
 use Mpociot\CaptainHook\Commands\ListWebhooks;
@@ -212,10 +211,18 @@ class CaptainHookServiceProvider extends ServiceProvider
 
         if (! $webhooks->isEmpty()) {
 
-            // unload relations to prevent excessively large job payloads
-            if (Str::startsWith($eventName, 'eloquent.')) {
+            $pattern = '/eloquent.(\w+)/';
+            if (preg_match($pattern, $eventName, $matches)) {
+                $activity = ucfirst(end($matches));
                 $model = reset($eventData);
-                if($model instanceof BaseModel) {
+                if ($model instanceof BaseModel) {
+
+                    // don't fire webhooks if activity shouldn't be logged
+                    if (!$model->shouldLogActivity($activity)) {
+                        return;
+                    }
+
+                    // unload relations to prevent excessively large job payloads
                     $eventData = [$model->getWebhookEventData()];
                 }
             }

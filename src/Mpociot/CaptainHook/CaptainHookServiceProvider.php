@@ -7,10 +7,12 @@ use GuzzleHttp\ClientInterface;
 use Illuminate\Foundation\Bus\DispatchesJobs;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Str;
 use Mpociot\CaptainHook\Commands\AddWebhook;
 use Mpociot\CaptainHook\Commands\DeleteWebhook;
 use Mpociot\CaptainHook\Commands\ListWebhooks;
 use Mpociot\CaptainHook\Jobs\TriggerWebhooksJob;
+use Pionect\Backoffice\Models\BaseModel;
 
 /**
  * This file is part of CaptainHook arrrrr.
@@ -209,6 +211,15 @@ class CaptainHookServiceProvider extends ServiceProvider
         $webhooks = $webhooks->filter($this->config->get('captain_hook.filter', null));
 
         if (! $webhooks->isEmpty()) {
+
+            // unload relations to prevent excessively large job payloads
+            if (Str::startsWith($eventName, 'eloquent.')) {
+                $model = reset($eventData);
+                if($model instanceof BaseModel) {
+                    $eventData = [$model->getWebhookEventData()];
+                }
+            }
+
             $this->dispatch(new TriggerWebhooksJob($webhooks, $eventData));
         }
     }

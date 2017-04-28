@@ -215,10 +215,14 @@ class CaptainHookServiceProvider extends ServiceProvider
             if (preg_match($pattern, $eventName, $matches)) {
                 $activity = ucfirst(end($matches));
                 $model = reset($eventData);
+                $force = false;
+                if(count($eventData) > 1) {
+                    $force = end($eventData) == 'force-webhooks';
+                }
                 if ($model instanceof BaseModel) {
 
                     // don't fire webhooks if activity shouldn't be logged
-                    if (!$model->shouldLogActivity($activity)) {
+                    if (!$force && !$model->shouldLogActivity($activity)) {
                         return;
                     }
 

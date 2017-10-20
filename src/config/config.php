@@ -38,6 +38,23 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Webhook data filter
+    |--------------------------------------------------------------------------
+    |
+    | The data filter allows you to filter the webhook based on the current
+    | event data and before being sent to the webhooks. By default, all data is json encoded.
+    | The second argument is the Webhook that was triggered in case
+    | you want to transform the data in different ways per hook.
+    |
+    | You can also use the 'Foo\Class@filter' notation if you want.
+    |
+    */
+    'filter_webhook' => function ($eventData, $webhook) {
+        return true;
+    },
+
+    /*
+    |--------------------------------------------------------------------------
     | Webhook data transformer
     |--------------------------------------------------------------------------
     |

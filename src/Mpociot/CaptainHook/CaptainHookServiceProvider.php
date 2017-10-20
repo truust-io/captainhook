@@ -4,14 +4,14 @@ namespace Mpociot\CaptainHook;
 
 use GuzzleHttp\Client;
 use GuzzleHttp\ClientInterface;
-use Illuminate\Support\Facades\Event;
+use Illuminate\Foundation\Bus\DispatchesJobs;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
 use Mpociot\CaptainHook\Commands\AddWebhook;
-use Illuminate\Foundation\Bus\DispatchesJobs;
-use Mpociot\CaptainHook\Commands\ListWebhooks;
 use Mpociot\CaptainHook\Commands\DeleteWebhook;
+use Mpociot\CaptainHook\Commands\ListWebhooks;
 use Mpociot\CaptainHook\Jobs\TriggerWebhooksJob;
+use Pionect\Backoffice\Models\BaseModel;
 
 /**
  * This file is part of CaptainHook arrrrr.
@@ -126,7 +126,7 @@ class CaptainHookServiceProvider extends ServiceProvider
     protected function registerEventListeners()
     {
         foreach ($this->listeners as $eventName) {
-            $this->app['events']->listen($eventName, [$this, 'handleEvent']);
+            $this->app['events']->listen($eventName . '*', [$this, 'handleEvent']);
         }
     }
 
@@ -157,13 +157,13 @@ class CaptainHookServiceProvider extends ServiceProvider
     public function getWebhooks()
     {
         // Check if migration ran
-        if (Schema::hasTable((new Webhook)->getTable())) {
-            return collect($this->getCache()->rememberForever(Webhook::CACHE_KEY, function () {
+        return collect($this->getCache()->rememberForever(Webhook::CACHE_KEY, function () {
+            if (Schema::hasTable((new Webhook)->getTable())) {
                 return Webhook::all();
-            }));
-        }
-
-        return collect();
+            } else {
+                return collect();
+            }
+        }));
     }
 
     /**
@@ -201,15 +201,36 @@ class CaptainHookServiceProvider extends ServiceProvider
     /**
      * Event listener.
      *
+     * @param $eventName
      * @param $eventData
      */
-    public function handleEvent($eventData)
+    public function handleEvent($eventName, $eventData)
     {
-        $eventName = Event::firing();
         $webhooks = $this->getWebhooks()->where('event', $eventName);
         $webhooks = $webhooks->filter($this->config->get('captain_hook.filter', null));
 
         if (! $webhooks->isEmpty()) {
+
+            $pattern = '/eloquent.(\w+)/';
+            if (preg_match($pattern, $eventName, $matches)) {
+                $activity = ucfirst(end($matches));
+                $model = reset($eventData);
+                $force = false;
+                if(count($eventData) > 1) {
+                    $force = end($eventData) == 'force-webhooks';
+                }
+                if ($model instanceof BaseModel) {
+
+                    // don't fire webhooks if activity shouldn't be logged
+                    if (!$force && !$model->shouldLogActivity($activity)) {
+                        return;
+                    }
+
+                    // unload relations to prevent excessively large job payloads
+                    $eventData = [$model->getWebhookEventData()];
+                }
+            }
+
             $this->dispatch(new TriggerWebhooksJob($webhooks, $eventData));
         }
     }

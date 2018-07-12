@@ -6,6 +6,7 @@ use GuzzleHttp\Client;
 use GuzzleHttp\Middleware;
 use GuzzleHttp\Promise\PromiseInterface;
 use Illuminate\Bus\Queueable;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 use Mpociot\CaptainHook\WebhookLog;
 use Illuminate\Queue\SerializesModels;
@@ -40,6 +41,13 @@ class TriggerWebhooksJob implements ShouldQueue
      */
     public function __construct($webhooks, $eventData)
     {
+        $model = end($eventData);
+
+        if ($model instanceof Model && method_exists($model, 'getWebhooksQueue')) {
+            $this->queue = $model->getWebhooksQueue();
+        } else {
+            $this->queue = 'hooks';
+        }
         $this->eventData = $eventData;
         $this->webhooks = $webhooks;
     }

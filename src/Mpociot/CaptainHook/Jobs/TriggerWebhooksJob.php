@@ -46,7 +46,7 @@ class TriggerWebhooksJob implements ShouldQueue
         if ($model instanceof Model && method_exists($model, 'getWebhooksQueue')) {
             $this->queue = $model->getWebhooksQueue();
         } else {
-            $this->queue = 'hooks';
+            $this->queue = 'default';
         }
         $this->eventData = $eventData;
         $this->webhooks = $webhooks;

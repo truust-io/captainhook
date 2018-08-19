@@ -146,9 +146,6 @@ class CaptainHookServiceProvider extends ServiceProvider
     public function setWebhooks($webhooks)
     {
         $this->webhooks = $webhooks;
-        $this->getCache()->rememberForever(Webhook::CACHE_KEY, function () {
-            return $this->webhooks;
-        });
     }
 
     /**
@@ -157,13 +154,11 @@ class CaptainHookServiceProvider extends ServiceProvider
     public function getWebhooks()
     {
         // Check if migration ran
-        return collect($this->getCache()->rememberForever(Webhook::CACHE_KEY, function () {
-            if (Schema::hasTable((new Webhook)->getTable())) {
-                return Webhook::all();
-            } else {
-                return collect();
-            }
-        }));
+        if (Schema::hasTable((new Webhook)->getTable())) {
+            return Webhook::all();
+        } else {
+            return collect();
+        }
     }
 
     /**

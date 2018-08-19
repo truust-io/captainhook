@@ -129,6 +129,7 @@ class TriggerWebhooksJob implements ShouldQueue
                         'json' => $transformer($this->eventData, $webhook),
                         'verify' => false,
                         'handler' => $middleware($client->getConfig('handler')),
+                        'timeout' => 10
                     ]);
                 } else {
                     $client->post($webhook['url'], [

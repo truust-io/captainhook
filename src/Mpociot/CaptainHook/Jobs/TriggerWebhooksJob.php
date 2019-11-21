@@ -113,6 +113,10 @@ class TriggerWebhooksJob implements ShouldQueue
                             $log->response = $response->getBody()->getContents();
                             $log->response_format = $log->payload_format = isset($response->getHeader('Content-Type')[0]) ? $response->getHeader('Content-Type')[0] : null;
 
+                            if (strlen($log->response) > 65530)
+                            {
+                                $log->response = substr($log->response, 0, 65530);
+                            }
                             $log->save();
 
                             // Retry this job if the webhook response didn't give us a HTTP 200 OK

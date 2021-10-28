@@ -2,6 +2,8 @@
 
 namespace Mpociot\CaptainHook;
 
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Database\Eloquent\Model as Eloquent;
 
@@ -66,5 +68,16 @@ class Webhook extends Eloquent
     public function lastLog()
     {
         return $this->hasOne(WebhookLog::class)->orderBy('created_at', 'DESC');
+    }
+    public static function all($columns = []) {
+        $_webhooks = config('platform.webhooks');
+        $webhooks = [];
+        if(is_array($_webhooks)) {
+            foreach($_webhooks as $event => $url) {
+                $webhook = new Webhook(['url' => $url, 'event' => $event]);
+                $webhooks[] = $webhook;
+            }
+        }
+        return self::whereNull('deleted_at')->get()->merge(new Collection($webhooks));
     }
 }

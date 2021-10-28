@@ -93,7 +93,17 @@ class TriggerWebhooksJob implements ShouldQueue
         $transformer = $this->resolveCallable($config->get('captain_hook.transformer'), 'transform');
         $responseCallback = $this->resolveCallable($config->get('captain_hook.response_callback'), 'handle');
 
-        foreach ($this->webhooks as $webhook) {
+        $uniqueWebhooks = [];
+        foreach ($this->webhooks as $webhook)
+        {
+            if ($filterWebhook($this->eventData, $webhook))
+            {
+                $uniqueWebhooks[sha1(json_encode($transformer($this->eventData, $webhook)))] = $webhook;
+            }
+        }
+
+        foreach ($uniqueWebhooks as $webhook)
+        {
             if ($filterWebhook($this->eventData, $webhook)) {
                 if ($logging) {
                     if ($config->get('captain_hook.log.storage_quantity') != -1 &&

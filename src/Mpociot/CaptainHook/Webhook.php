@@ -69,15 +69,24 @@ class Webhook extends Eloquent
     {
         return $this->hasOne(WebhookLog::class)->orderBy('created_at', 'DESC');
     }
-    public static function all($columns = []) {
+
+    public static function all($columns = [])
+    {
         $_webhooks = config('platform.webhooks');
         $webhooks = [];
-        if(is_array($_webhooks)) {
-            foreach($_webhooks as $event => $url) {
-                $webhook = new Webhook(['url' => $url, 'event' => $event]);
+        if (is_array($_webhooks))
+        {
+            foreach ($_webhooks as $event => $url)
+            {
+                $webhook = new Webhook(['url' => $url, 'event' => $event, 'tenant_id' => -1]);
                 $webhooks[] = $webhook;
             }
         }
-        return self::whereNull('deleted_at')->get()->merge(new Collection($webhooks));
+        $ws = self::whereNull('deleted_at')->get();
+        foreach ($ws as $w)
+        {
+            $webhooks[] = $w;
+        }
+        return new Collection($webhooks);
     }
 }

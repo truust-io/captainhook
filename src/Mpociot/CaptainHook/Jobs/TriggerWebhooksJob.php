@@ -98,7 +98,7 @@ class TriggerWebhooksJob implements ShouldQueue
         {
             if ($filterWebhook($this->eventData, $webhook))
             {
-                $uniqueWebhooks[sha1(json_encode($transformer($this->eventData, $webhook)))] = $webhook;
+                $uniqueWebhooks[sha1($webhook['url'].'-'.json_encode($transformer($this->eventData, $webhook)))] = $webhook;
             }
         }
 

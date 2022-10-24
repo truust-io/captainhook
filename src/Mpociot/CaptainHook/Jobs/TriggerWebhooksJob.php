@@ -105,6 +105,11 @@ class TriggerWebhooksJob implements ShouldQueue
         foreach ($uniqueWebhooks as $webhook)
         {
             if ($filterWebhook($this->eventData, $webhook)) {
+                $wh_headers = ['User-Agent' => 'GuzzleHttp/6.3.3 PHP/7.1.10-1+ubuntu14.04.1+deb.sury.org+1'];
+                if(is_array($webhook['headers'])) {
+                    $wh_headers = array_merge($wh_headers, $webhook['headers']);
+                }
+
                 if ($logging) {
                     if ($config->get('captain_hook.log.storage_quantity') != -1 &&
                         $webhook->logs()->count() >= $config->get('captain_hook.log.storage_quantity')) {
@@ -145,9 +150,7 @@ class TriggerWebhooksJob implements ShouldQueue
                         'verify' => false,
                         'handler' => $middleware($client->getConfig('handler')),
                         'timeout' => 8,
-                        'headers' => [
-                            'User-Agent' => 'GuzzleHttp/6.3.3 PHP/7.1.10-1+ubuntu14.04.1+deb.sury.org+1'
-                        ]
+                        'headers' => $wh_headers
                     ]);
                 } else {
                     $client->post($webhook['url'], [
@@ -156,6 +159,7 @@ class TriggerWebhooksJob implements ShouldQueue
                         'json' => $transformer($this->eventData, $webhook),
                         'verify' => false,
                         'timeout' => 8,
+                        'headers' => $wh_headers
                     ]);
                 }
             }

@@ -106,8 +106,11 @@ class TriggerWebhooksJob implements ShouldQueue
         {
             if ($filterWebhook($this->eventData, $webhook)) {
                 $wh_headers = ['User-Agent' => 'GuzzleHttp/6.3.3 PHP/7.1.10-1+ubuntu14.04.1+deb.sury.org+1'];
-                if(is_array($webhook['headers'])) {
-                    $wh_headers = array_merge($wh_headers, $webhook['headers']);
+                if(!is_null($webhook['headers'])) {
+                    $whs = json_decode($webhook['headers']);
+                    foreach($whs as $k => $v) {
+                        $wh_headers[$k] = $v;
+                    }
                 }
 
                 if ($logging) {
